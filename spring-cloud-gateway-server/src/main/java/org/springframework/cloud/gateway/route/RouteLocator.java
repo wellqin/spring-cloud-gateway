@@ -24,6 +24,14 @@ import reactor.core.publisher.Flux;
 // TODO: rename to Routes?
 public interface RouteLocator {
 
+	/**
+	 * 获取路由
+	 * 外部化配置定义 Route 使用的是 RouteDefinition 组件。同样的也有配套的 RouteDefinitionLocator 组件。
+	 *
+	 * Gateway 通过接口 RouteLocator 接口来获取路由配置，RouteLocator 有不同的实现，对应了不同的定义路由的方式。
+	 *
+	 * @return {@link Flux}<{@link Route}>
+	 */
 	Flux<Route> getRoutes();
 
 }

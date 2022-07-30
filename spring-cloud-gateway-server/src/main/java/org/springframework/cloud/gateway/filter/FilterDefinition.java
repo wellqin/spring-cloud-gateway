@@ -28,6 +28,12 @@ import org.springframework.validation.annotation.Validated;
 import static org.springframework.util.StringUtils.tokenizeToStringArray;
 
 /**
+ * 同样遵循组件名前缀 + Definition 后缀的命名规范，用于定义 Filter。
+ * 一个键值对参数用于构造 Filter 对象。- AddRequestHeader=X-Request-Foo, Bar
+ * **AddRequestHeader** ，对应 FilterDefinition 中的 `name` 属性。`AddRequestHeader`为 AddRequestHeaderGatewayFilterFactory 的类名前缀。
+ *
+ * **X-Request-Foo, Bar** ，会被解析成 FilterDefinition 中的 Map 类型属性 `args`。
+ * 此处会被解析成两组键值对，以英文逗号将`=`后面的字符串分隔成数组，`key`是固定字符串 `_ genkey _` + 数组元素下标，`value`为数组元素自身。
  * @author Spencer Gibb
  */
 @Validated
@@ -52,6 +58,7 @@ public class FilterDefinition {
 		String[] args = tokenizeToStringArray(text.substring(eqIdx + 1), ",");
 
 		for (int i = 0; i < args.length; i++) {
+			// 解析键值对
 			this.args.put(NameUtils.generateName(i), args[i]);
 		}
 	}

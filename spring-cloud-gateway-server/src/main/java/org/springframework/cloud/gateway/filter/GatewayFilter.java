@@ -28,6 +28,9 @@ import org.springframework.web.server.ServerWebExchange;
  *
  * Copied from WebFilter
  *
+ * Filter 的设计，用于实现可扩展的切面逻辑
+ * Filter 最终是通过 filter chain 来形成链式调用的，
+ * 每个 filter 处理完 pre filter 逻辑后委派给 filter chain，filter chain 再委派给下一下 filter。
  * @author Rossen Stoyanchev
  * @since 5.0
  */
@@ -44,6 +47,9 @@ public interface GatewayFilter extends ShortcutConfigurable {
 	String VALUE_KEY = "value";
 
 	/**
+	 * http handler做的事情第一是将request 和 response转为一个exchange，这个exchange非常核心，是各个filter之间参数流转的载体，
+	 * 该类包含request、response、attributes(扩展字段)，接着做的事情就是web filter链的执行，其中的逻辑主要是监控。
+	 *
 	 * Process the Web request and (optionally) delegate to the next {@code WebFilter}
 	 * through the given {@link GatewayFilterChain}.
 	 * @param exchange the current server exchange

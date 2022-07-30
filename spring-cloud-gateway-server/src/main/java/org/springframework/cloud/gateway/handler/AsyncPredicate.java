@@ -29,15 +29,27 @@ import org.springframework.util.Assert;
 import org.springframework.web.server.ServerWebExchange;
 
 /**
+ * 异步路由断言
+ *
+ * Predicate 即 Route 中所定义的部分，用于条件匹配，请参考 Java 8 提供的 Predicate 和 Function。
+ * AsyncPredicate是Routed的一个成员属性，用于条件匹配。
+ * 其实现了 Java 8 提供的函数式接口Function<T,R> ，Function<T,R> 接口用来根据一个类型的数据得到另一个类型的数据，前者称为前置条件，后者称为后置条件。
  * @author Ben Hale
  */
 public interface AsyncPredicate<T> extends Function<T, Publisher<Boolean>>, HasConfig {
 
+	/**
+	 * and ，与操作，即两个 Predicate 组成一个，需要同时满足。
+	 *
+	 * @param other Predicate
+	 * @return org.springframework.cloud.gateway.handler.AsyncPredicate<T>
+	 */
 	default AsyncPredicate<T> and(AsyncPredicate<? super T> other) {
 		return new AndAsyncPredicate<>(this, other);
 	}
 
 	default AsyncPredicate<T> negate() {
+		// 取反操作，即对 Predicate 匹配结果取反
 		return new NegateAsyncPredicate<>(this);
 	}
 
@@ -46,6 +58,7 @@ public interface AsyncPredicate<T> extends Function<T, Publisher<Boolean>>, HasC
 	}
 
 	default AsyncPredicate<T> or(AsyncPredicate<? super T> other) {
+		// or，或操作，即两个 Predicate 组成一个，只需满足其一
 		return new OrAsyncPredicate<>(this, other);
 	}
 
@@ -58,7 +71,9 @@ public interface AsyncPredicate<T> extends Function<T, Publisher<Boolean>>, HasC
 	}
 
 	class DefaultAsyncPredicate<T> implements AsyncPredicate<T> {
-
+		/**
+		 * delegate: 委派 ... 为代表
+		 * */
 		private final Predicate<T> delegate;
 
 		public DefaultAsyncPredicate(Predicate<T> delegate) {

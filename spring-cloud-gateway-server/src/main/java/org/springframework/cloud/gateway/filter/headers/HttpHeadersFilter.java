@@ -23,17 +23,36 @@ import org.springframework.web.server.ServerWebExchange;
 
 public interface HttpHeadersFilter {
 
+	/**
+	 * 过滤请求
+	 *
+	 * Java 8 新增了接口的默认方法。
+	 * 简单说，默认方法就是接口可以有实现方法，而且不需要实现类去实现其方法。
+	 * 我们只需在方法名前面加个 default 关键字即可实现默认方法。
+	 *
+	 * @param filters  过滤器
+	 * @param exchange 交换
+	 * @return {@link HttpHeaders}
+	 */
 	static HttpHeaders filterRequest(List<HttpHeadersFilter> filters, ServerWebExchange exchange) {
 		HttpHeaders headers = exchange.getRequest().getHeaders();
 		return filter(filters, headers, exchange, Type.REQUEST);
 	}
 
+	/**
+	 * 过滤器
+	 *
+	 * @param filters  过滤器
+	 * @param input    输入
+	 * @param exchange 交换
+	 * @param type     类型
+	 * @return {@link HttpHeaders}
+	 */
 	static HttpHeaders filter(List<HttpHeadersFilter> filters, HttpHeaders input, ServerWebExchange exchange,
-			Type type) {
+							  Type type) {
 		if (filters != null) {
 			HttpHeaders filtered = input;
-			for (int i = 0; i < filters.size(); i++) {
-				HttpHeadersFilter filter = filters.get(i);
+			for (HttpHeadersFilter filter : filters) {
 				if (filter.supports(type)) {
 					filtered = filter.filter(filtered, exchange);
 				}
@@ -52,6 +71,12 @@ public interface HttpHeadersFilter {
 	 */
 	HttpHeaders filter(HttpHeaders input, ServerWebExchange exchange);
 
+	/**
+	 * 支持
+	 *
+	 * @param type 类型
+	 * @return boolean
+	 */
 	default boolean supports(Type type) {
 		return type.equals(Type.REQUEST);
 	}

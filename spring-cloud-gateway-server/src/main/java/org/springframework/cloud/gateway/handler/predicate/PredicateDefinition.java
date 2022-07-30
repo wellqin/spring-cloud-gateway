@@ -29,6 +29,7 @@ import org.springframework.validation.annotation.Validated;
 import static org.springframework.util.StringUtils.tokenizeToStringArray;
 
 /**
+ * 同样遵循组件名前缀 + Definition 后缀的命名规范，用于定义 Predicate。
  * @author Spencer Gibb
  */
 @Validated

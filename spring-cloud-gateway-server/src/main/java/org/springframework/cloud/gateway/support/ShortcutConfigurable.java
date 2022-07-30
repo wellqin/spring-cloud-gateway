@@ -45,6 +45,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
+ * ShortcutConfigurable 接口提供的默认方法，主要用于对过滤器和断言参数进行标准化处理，将表达式和生成的键进行转换。
  * @author Spencer Gibb
  */
 public interface ShortcutConfigurable {

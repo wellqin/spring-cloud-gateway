@@ -40,6 +40,7 @@ import org.springframework.validation.annotation.Validated;
 public class GatewayProperties {
 
 	/**
+	 * 表明以 "spring.cloud.gateway" 前缀的 properties 会绑定 GatewayProperties。
 	 * Properties prefix.
 	 */
 	public static final String PREFIX = "spring.cloud.gateway";
@@ -54,6 +55,7 @@ public class GatewayProperties {
 	private List<RouteDefinition> routes = new ArrayList<>();
 
 	/**
+	 * 用于定义默认的 Filter 列表，默认的 Filter 会应用到每一个 Route 上，gateway 处理时会将其与 Route 中指定的 Filter 进行合并后并逐个执行。
 	 * List of filter definitions that are applied to every route.
 	 */
 	private List<FilterDefinition> defaultFilters = new ArrayList<>();

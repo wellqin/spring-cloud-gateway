@@ -23,6 +23,11 @@ import reactor.core.publisher.Flux;
  */
 public interface RouteDefinitionLocator {
 
+	/**
+	 * 获取路由定义
+	 *
+	 * @return {@link Flux}<{@link RouteDefinition}>
+	 */
 	Flux<RouteDefinition> getRouteDefinitions();
 
 }

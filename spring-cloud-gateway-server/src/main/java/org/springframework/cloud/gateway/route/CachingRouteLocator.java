@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jetbrains.annotations.NotNull;
 import reactor.cache.CacheFlux;
 import reactor.core.publisher.Flux;
 
@@ -76,7 +77,7 @@ public class CachingRouteLocator
 	}
 
 	@Override
-	public void onApplicationEvent(RefreshRoutesEvent event) {
+	public void onApplicationEvent(@NotNull RefreshRoutesEvent event) {
 		try {
 			fetch().collect(Collectors.toList()).subscribe(
 					list -> Flux.fromIterable(list).materialize().collect(Collectors.toList()).subscribe(signals -> {
@@ -102,7 +103,7 @@ public class CachingRouteLocator
 	}
 
 	@Override
-	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
+	public void setApplicationEventPublisher(@NotNull ApplicationEventPublisher applicationEventPublisher) {
 		this.applicationEventPublisher = applicationEventPublisher;
 	}
 

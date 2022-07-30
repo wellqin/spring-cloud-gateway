@@ -44,7 +44,7 @@ import org.springframework.web.server.ServerWebExchange;
 
 /**
  * {@link RouteLocator} that loads routes from a {@link RouteDefinitionLocator}.
- *
+ *R outeLocator 最主要的实现类，用于将 RouteDefinition 转换成 Route。
  * @author Spencer Gibb
  */
 public class RouteDefinitionRouteLocator implements RouteLocator {
@@ -64,6 +64,9 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
 
 	private final Map<String, GatewayFilterFactory> gatewayFilterFactories = new HashMap<>();
 
+	/**
+	 * 网关属性：外部化配置类
+	 */
 	private final GatewayProperties gatewayProperties;
 
 	public RouteDefinitionRouteLocator(RouteDefinitionLocator routeDefinitionLocator,
@@ -90,8 +93,14 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
 		});
 	}
 
+	/**
+	 * 获取路由
+	 *
+	 * @return {@link Flux}<{@link Route}>
+	 */
 	@Override
 	public Flux<Route> getRoutes() {
+		// 调用 convertToRoute 方法将 RouteDefinition 转换成 Route。
 		Flux<Route> routes = this.routeDefinitionLocator.getRouteDefinitions().map(this::convertToRoute);
 
 		if (!gatewayProperties.isFailOnRouteDefinitionError()) {
@@ -113,14 +122,18 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
 	}
 
 	private Route convertToRoute(RouteDefinition routeDefinition) {
+		// 将 PredicateDefinition 转换成 AsyncPredicate
 		AsyncPredicate<ServerWebExchange> predicate = combinePredicates(routeDefinition);
+		// 将 FilterDefinition 转换成 GatewayFilter
 		List<GatewayFilter> gatewayFilters = getFilters(routeDefinition);
-
+		// 生成 Route 对象
 		return Route.async(routeDefinition).asyncPredicate(predicate).replaceFilters(gatewayFilters).build();
 	}
 
 	@SuppressWarnings("unchecked")
 	List<GatewayFilter> loadGatewayFilters(String id, List<FilterDefinition> filterDefinitions) {
+		// 根据名称获取对应的 filter factory，生成 config 对象，绑定属性，调用工厂方法产生 GatewayFilter 对象。
+		// 从过滤器工厂中取出配置了的过滤器封装到路由的过滤器集合中
 		ArrayList<GatewayFilter> ordered = new ArrayList<>(filterDefinitions.size());
 		for (int i = 0; i < filterDefinitions.size(); i++) {
 			FilterDefinition definition = filterDefinitions.get(i);
@@ -150,12 +163,13 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
 				HasRouteId hasRouteId = (HasRouteId) configuration;
 				hasRouteId.setRouteId(id);
 			}
-
+			// 遍历过滤器集合，封装成带Order值的过滤器集合
 			GatewayFilter gatewayFilter = factory.apply(configuration);
 			if (gatewayFilter instanceof Ordered) {
 				ordered.add(gatewayFilter);
 			}
 			else {
+				// 从1开始递增生成Order值
 				ordered.add(new OrderedGatewayFilter(gatewayFilter, i + 1));
 			}
 		}
@@ -167,15 +181,16 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
 		List<GatewayFilter> filters = new ArrayList<>();
 
 		// TODO: support option to apply defaults after route specific filters?
+		// ① 处理 GatewayProperties 中定义的默认的 FilterDefinition，转换成 全局GatewayFilter
 		if (!this.gatewayProperties.getDefaultFilters().isEmpty()) {
 			filters.addAll(loadGatewayFilters(routeDefinition.getId(),
 					new ArrayList<>(this.gatewayProperties.getDefaultFilters())));
 		}
-
+		// ② 将 RouteDefinition 中定义的 FilterDefinition 转换成 GatewayFilter。
 		if (!routeDefinition.getFilters().isEmpty()) {
 			filters.addAll(loadGatewayFilters(routeDefinition.getId(), new ArrayList<>(routeDefinition.getFilters())));
 		}
-
+		// ③ 对 GatewayFilter 进行排序，排序的详细逻辑请查阅 spring 中的 Ordered 接口。
 		AnnotationAwareOrderComparator.sort(filters);
 		return filters;
 	}
@@ -186,10 +201,12 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
 			// this is a very rare case, but possible, just match all
 			return AsyncPredicate.from(exchange -> true);
 		}
+		// 调用 lookup 方法，将列表中第一个 PredicateDefinition 转换成 AsyncPredicate
 		AsyncPredicate<ServerWebExchange> predicate = lookup(routeDefinition, predicates.get(0));
-
+		// 循环调用，将列表中每一个 PredicateDefinition 都转换成 AsyncPredicate
 		for (PredicateDefinition andPredicate : predicates.subList(1, predicates.size())) {
 			AsyncPredicate<ServerWebExchange> found = lookup(routeDefinition, andPredicate);
+			// 应用 and 操作，将所有的 AsyncPredicate 组合成一个 AsyncPredicate 对象
 			predicate = predicate.and(found);
 		}
 
@@ -198,6 +215,7 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
 
 	@SuppressWarnings("unchecked")
 	private AsyncPredicate<ServerWebExchange> lookup(RouteDefinition route, PredicateDefinition predicate) {
+		// ① 根据 predicate 名称获取对应的 predicate factory。
 		RoutePredicateFactory<Object> factory = this.predicates.get(predicate.getName());
 		if (factory == null) {
 			throw new IllegalArgumentException("Unable to find RoutePredicateFactory with name " + predicate.getName());
@@ -215,7 +233,11 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
 						RouteDefinitionRouteLocator.this, route.getId(), properties))
 				.bind();
 		// @formatter:on
-
+		// ② 获取 PredicateDefinition 中的 Map 类型参数，key 是固定字符串_genkey_ + 数字拼接而成。
+		// ③ 对第 ② 步获得的参数作进一步转换，key为 config 类（工厂类中通过范型指定）的属性名称。
+		// ④ 调用 factory 的 newConfig 方法创建一个 config 类对象。
+		// ⑤ 将第 ③ 步中产生的参数绑定到 config 对象上。
+		// ⑥ 将 cofing 作参数代入，调用 factory 的 applyAsync 方法创建 AsyncPredicate 对象。
 		return factory.applyAsync(config);
 	}
 

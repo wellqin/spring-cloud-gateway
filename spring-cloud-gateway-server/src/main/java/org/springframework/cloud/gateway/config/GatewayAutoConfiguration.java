@@ -161,6 +161,14 @@ import org.springframework.web.reactive.socket.server.support.HandshakeWebSocket
 import org.springframework.web.reactive.socket.server.upgrade.ReactorNettyRequestUpgradeStrategy;
 
 /**
+ * @Configuration表示是一个SpringBoot配置类
+ * @ConditionalOnProperty 监听spring.cloud.gateway.enabled配置，缺少配置默认为true
+ * @EnableConfigurationProperties @ConfigurationProperties注解的前置条件，@ConfigurationProperties可以自动的将配置文件解析为Bean
+ * @AutoConfigureBefore 先加载WebFluxAutoConfiguration和HttpHandlerAutoConfiguration，再加载自身
+ * @AutoConfigureAfter 先加载自身，再加载GatewayLoadBalancerClientAutoConfiguration和GatewayClassPathWarningAutoConfiguration
+ * @ConditionalOnClass 配置加载依赖DispatcherHandler，即依赖WebFlux组件
+ *
+ *
  * @author Spencer Gibb
  * @author Ziemowit Stolarczyk
  * @author Mete Alpaslan Katırcıoğlu
@@ -185,6 +193,13 @@ public class GatewayAutoConfiguration {
 		return new RouteLocatorBuilder(context);
 	}
 
+	/**
+	 * 路由定义属性定位器
+	 * 下面三个是初始化 RouteDefinitionLocator
+	 *
+	 * @param properties 属性
+	 * @return {@link PropertiesRouteDefinitionLocator}
+	 */
 	@Bean
 	@ConditionalOnMissingBean
 	public PropertiesRouteDefinitionLocator propertiesRouteDefinitionLocator(GatewayProperties properties) {
@@ -210,6 +225,17 @@ public class GatewayAutoConfiguration {
 		return new ConfigurationService(beanFactory, conversionService, validator);
 	}
 
+	/**
+	 * 路由定义路线定位器
+	 * 初始化 RouteLocator
+	 *
+	 * @param properties             属性
+	 * @param gatewayFilters         网关过滤器
+	 * @param predicates             谓词
+	 * @param routeDefinitionLocator 路由定义定位器
+	 * @param configurationService   配置服务
+	 * @return {@link RouteLocator}
+	 */
 	@Bean
 	public RouteLocator routeDefinitionRouteLocator(GatewayProperties properties,
 			List<GatewayFilterFactory> gatewayFilters, List<RoutePredicateFactory> predicates,
@@ -232,6 +258,15 @@ public class GatewayAutoConfiguration {
 		return new RouteRefreshListener(publisher);
 	}
 
+	/**
+	 * 过滤网络处理器
+	 * 当所有 org.springframework.cloud.gateway.filter.GlobalFilter 初始化完成时
+	 * (包括上面的 NettyRoutingFilter / NettyWriteResponseFilter)，
+	 * 创建一个类型为 org.springframework.cloud.gateway.handler.FilteringWebHandler 的 Bean 对象
+	 *
+	 * @param globalFilters 全局过滤器
+	 * @return {@link FilteringWebHandler}
+	 */
 	@Bean
 	public FilteringWebHandler filteringWebHandler(List<GlobalFilter> globalFilters) {
 		return new FilteringWebHandler(globalFilters);
@@ -242,6 +277,15 @@ public class GatewayAutoConfiguration {
 		return new GlobalCorsProperties();
 	}
 
+	/**
+	 * RoutePredicateHandlerMapping：用于查找匹配到 Route ，并进行处理
+	 *
+	 * @param webHandler           网络处理器
+	 * @param routeLocator         路线定位器
+	 * @param globalCorsProperties 全局属性
+	 * @param environment          环境
+	 * @return {@link RoutePredicateHandlerMapping}
+	 */
 	@Bean
 	@ConditionalOnMissingBean
 	public RoutePredicateHandlerMapping routePredicateHandlerMapping(FilteringWebHandler webHandler,
@@ -249,6 +293,12 @@ public class GatewayAutoConfiguration {
 		return new RoutePredicateHandlerMapping(webHandler, routeLocator, globalCorsProperties, environment);
 	}
 
+	/**
+	 * 网关属性
+	 * 用于加载配置文件配置的 RouteDefinition / FilterDefinition
+	 *
+	 * @return {@link GatewayProperties}
+	 */
 	@Bean
 	public GatewayProperties gatewayProperties() {
 		return new GatewayProperties();
@@ -350,6 +400,8 @@ public class GatewayAutoConfiguration {
 	}
 
 	// Predicate Factory beans
+	// 创建 org.springframework.cloud.gateway.handler.predicate 包下的
+	// org.springframework.cloud.gateway.handler.predicate.RoutePredicateFactory 接口的实现们
 
 	@Bean
 	@ConditionalOnEnabledPredicate
@@ -489,6 +541,11 @@ public class GatewayAutoConfiguration {
 		return new CacheRequestBodyGatewayFilterFactory();
 	}
 
+	/**
+	 * 前缀路径网关过滤工厂
+	 * 创建 org.springframework.cloud.gateway.filter.factory 包下的 org.springframework.cloud.gateway.filter.factory.GatewayFilterFactory 接口的实现们。
+	 * @return {@link PrefixPathGatewayFilterFactory}
+	 */
 	@Bean
 	@ConditionalOnEnabledFilter
 	public PrefixPathGatewayFilterFactory prefixPathGatewayFilterFactory() {
@@ -639,7 +696,7 @@ public class GatewayAutoConfiguration {
 	@Configuration(proxyBeanMethods = false)
 	@ConditionalOnClass(HttpClient.class)
 	protected static class NettyConfiguration {
-
+		// Netty 配置类
 		protected final Log logger = LogFactory.getLog(getClass());
 
 		@Bean

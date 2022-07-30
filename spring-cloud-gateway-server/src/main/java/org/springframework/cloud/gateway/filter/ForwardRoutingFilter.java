@@ -30,6 +30,15 @@ import org.springframework.web.server.ServerWebExchange;
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.GATEWAY_REQUEST_URL_ATTR;
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.isAlreadyRouted;
 
+/**
+ * 转发路由过滤器
+ *
+ * ForwardRoutingFilter 做的事情也很简单，直接复用了 spring mvc 的能力，将请求提交给 dispatcherHandler 进行处理
+ * ，dispatcherHandler 会根据 path 前缀找到需要目标处理器执行逻辑。
+ *
+ * @author qinwei05
+ * @date 2022/07/01
+ */
 public class ForwardRoutingFilter implements GlobalFilter, Ordered {
 
 	private static final Log log = LogFactory.getLog(ForwardRoutingFilter.class);

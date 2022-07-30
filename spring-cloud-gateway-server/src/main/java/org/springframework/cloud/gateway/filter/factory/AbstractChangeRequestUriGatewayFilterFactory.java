@@ -46,6 +46,13 @@ public abstract class AbstractChangeRequestUriGatewayFilterFactory<T> extends Ab
 		this(clazz, RouteToRequestUrlFilter.ROUTE_TO_URL_FILTER_ORDER + 1);
 	}
 
+	/**
+	 * 确定请求uri
+	 *
+	 * @param exchange 交换
+	 * @param config   配置
+	 * @return {@link Optional}<{@link URI}>
+	 */
 	protected abstract Optional<URI> determineRequestUri(ServerWebExchange exchange, T config);
 
 	@Override

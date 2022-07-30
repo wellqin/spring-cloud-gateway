@@ -35,6 +35,8 @@ import org.springframework.validation.annotation.Validated;
 import static org.springframework.util.StringUtils.tokenizeToStringArray;
 
 /**
+ * 组件用来对 Route 信息进行定义，最终会被 RouteLocator 解析成 Route。
+ * RouteDefinition 中所定义的属性与 Route 本身是一一对应的。
  * @author Spencer Gibb
  */
 @Validated

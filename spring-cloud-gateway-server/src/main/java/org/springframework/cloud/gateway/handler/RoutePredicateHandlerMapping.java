@@ -37,6 +37,12 @@ import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.G
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR;
 
 /**
+ * 获取Route（加载配置）
+ * DispatcherHandler：所有请求的调度器，负载请求分发
+ * RoutePredicateHandlerMapping:路由谓语匹配器，用于路由的查找，以及找到路由后返回对应的WebHandler，
+ * 								DispatcherHandler会依次遍历HandlerMapping集合进行处理
+ * FilteringWebHandler : 使用Filter链表处理请求的WebHandler，RoutePredicateHandlerMapping找到路由后返回对应的
+ * 						 FilteringWebHandler对请求进行处理，FilteringWebHandler负责组装Filter链表并调用链表处理请求。
  * @author Spencer Gibb
  */
 public class RoutePredicateHandlerMapping extends AbstractHandlerMapping {
@@ -80,6 +86,7 @@ public class RoutePredicateHandlerMapping extends AbstractHandlerMapping {
 				&& exchange.getRequest().getURI().getPort() == this.managementPort) {
 			return Mono.empty();
 		}
+		// 设置mapping到上下文环境: GATEWAY_HANDLER_MAPPER_ATTR == gatewayHandlerMapper
 		exchange.getAttributes().put(GATEWAY_HANDLER_MAPPER_ATTR, getSimpleName());
 
 		return lookupRoute(exchange)
@@ -89,10 +96,12 @@ public class RoutePredicateHandlerMapping extends AbstractHandlerMapping {
 					if (logger.isDebugEnabled()) {
 						logger.debug("Mapping [" + getExchangeDesc(exchange) + "] to " + r);
 					}
-
+					// 将找到的路由信息设置到上下文环境中: GATEWAY_ROUTE_ATTR == gatewayRoute
 					exchange.getAttributes().put(GATEWAY_ROUTE_ATTR, r);
+					// 返回mapping对应的WebHandler即FilteringWebHandler
 					return Mono.just(webHandler);
 				}).switchIfEmpty(Mono.empty().then(Mono.fromRunnable(() -> {
+					// 当前未找到路由时返回空，并移除GATEWAY_PREDICATE_ROUTE_ATTR
 					exchange.getAttributes().remove(GATEWAY_PREDICATE_ROUTE_ATTR);
 					if (logger.isTraceEnabled()) {
 						logger.trace("No RouteDefinition found for [" + getExchangeDesc(exchange) + "]");
@@ -120,6 +129,8 @@ public class RoutePredicateHandlerMapping extends AbstractHandlerMapping {
 	}
 
 	protected Mono<Route> lookupRoute(ServerWebExchange exchange) {
+		// 加载路由配置: 通过路由定位器获取路由信息
+		// 寻找路由规则的核心类是 RoutePredicateHandlerMapping，逻辑也非常简单，就是把所有的 route 规则的 predicate 遍历一遍看哪个 predicate 能够命中
 		return this.routeLocator.getRoutes()
 				// individually filter routes so that filterWhen error delaying is not a
 				// problem

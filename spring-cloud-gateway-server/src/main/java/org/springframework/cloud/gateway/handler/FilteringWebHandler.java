@@ -40,6 +40,10 @@ import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.G
 /**
  * WebHandler that delegates to a chain of {@link GlobalFilter} instances and
  * {@link GatewayFilterFactory} instances then to the target {@link WebHandler}.
+ * 1. 获取 route 级别的过滤器
+ * 2. 获取全局过滤器
+ * 3. 两种过滤器放在一起并根据 order 进行排序
+ * 4. 执行过滤器链
  *
  * @author Rossen Stoyanchev
  * @author Spencer Gibb
@@ -71,14 +75,26 @@ public class FilteringWebHandler implements WebHandler {
 	 * this.combinedFiltersForRoute.clear();
 	 */
 
+	/**
+	 * 处理: 会将路由中的过滤器和全局过滤器合并封装排序，生成完整的过滤器链
+	 *  * 1. 获取 route 级别的过滤器
+	 *  * 2. 获取全局过滤器
+	 *  * 3. 两种过滤器放在一起并根据 order 进行排序
+	 *  * 4. 执行过滤器链
+	 *
+	 * @param exchange 交换
+	 * @return {@link Mono}<{@link Void}>
+	 */
 	@Override
 	public Mono<Void> handle(ServerWebExchange exchange) {
 		Route route = exchange.getRequiredAttribute(GATEWAY_ROUTE_ATTR);
 		List<GatewayFilter> gatewayFilters = route.getFilters();
 
 		List<GatewayFilter> combined = new ArrayList<>(this.globalFilters);
+		// 将路由中的过滤器集合添加到全局过滤器集合
 		combined.addAll(gatewayFilters);
 		// TODO: needed or cached?
+		// 排序算法
 		AnnotationAwareOrderComparator.sort(combined);
 
 		if (logger.isDebugEnabled()) {
